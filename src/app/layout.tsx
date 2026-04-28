@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'TripMate | Find your perfect travel companion',
   description: 'Connect with travelers, join group trips, and make local friends.',
+  icons: {
+    icon: "/icon.svg",
+  }
 }
 
 export default function RootLayout({

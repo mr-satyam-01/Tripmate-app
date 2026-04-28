@@ -25,64 +25,93 @@ export default function GroupTripsPage() {
       const userGender = userData?.gender || null
       setCurrentUserGender(userGender)
 
-      const { data: tripsData } = await supabase
+      // Fetch from group_trips table (legacy)
+      const { data: legacyTrips } = await supabase
         .from('group_trips')
-        .select(`
-          *,
-          users (
-            name,
-            profile_image_url
-          )
-        `)
+        .select(`*, users ( name, profile_image_url )`)
         .neq('creator_id', user.id)
         .order('created_at', { ascending: false })
 
-      const { data: requestsData } = await supabase
+      // Fetch from trips table (new — created via Create Trip page)
+      const { data: unifiedTrips } = await supabase
+        .from('trips')
+        .select(`*, users ( name, profile_image_url )`)
+        .eq('trip_type', 'group')
+        .neq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      // Merge both sources, normalizing creator field
+      const legacyNormalized = (legacyTrips || []).map(t => ({
+        ...t,
+        _source: 'group_trips' as const,
+        _ownerId: t.creator_id
+      }))
+      const unifiedNormalized = (unifiedTrips || []).map(t => ({
+        ...t,
+        _source: 'trips' as const,
+        _ownerId: t.user_id,
+        creator_id: t.user_id // normalize for GroupTripCard
+      }))
+
+      // Deduplicate by id (in case a trip exists in both)
+      const seenIds = new Set<string>()
+      const allTrips: any[] = []
+      for (const t of [...unifiedNormalized, ...legacyNormalized]) {
+        if (!seenIds.has(t.id)) {
+          seenIds.add(t.id)
+          allTrips.push(t)
+        }
+      }
+
+      // Fetch requests from both tables
+      const { data: groupRequests } = await supabase
         .from('trip_requests')
         .select('trip_id, status, user_id')
+      const { data: duoRequests } = await supabase
+        .from('duo_trip_requests')
+        .select('trip_id, status, user_id')
 
-      if (tripsData) {
-        const memberCounts: Record<string, number> = {}
-        const userRequestStatuses: Record<string, string> = {}
+      const allRequests = [...(groupRequests || []), ...(duoRequests || [])]
 
-        requestsData?.forEach(r => {
-          if (r.user_id === user.id) {
-            userRequestStatuses[r.trip_id] = r.status
-          }
-          if (r.status === 'accepted') {
-            memberCounts[r.trip_id] = (memberCounts[r.trip_id] || 0) + 1
-          }
-        })
+      const memberCounts: Record<string, number> = {}
+      const userRequestStatuses: Record<string, string> = {}
 
-        setRequestStatusMap(userRequestStatuses)
-        
-        const enhancedTrips = tripsData.map(t => ({
-          ...t,
-          current_members: (memberCounts[t.id] || 0) + 1
-        }))
-
-        let filteredTrips = enhancedTrips
-
-        // Apply explicit gender toggle filter
-        if (genderFilter !== 'any') {
-          filteredTrips = filteredTrips.filter(t => t.gender_preference === genderFilter)
+      allRequests.forEach(r => {
+        if (r.user_id === user.id) {
+          userRequestStatuses[r.trip_id] = r.status
         }
-        
-        // Filter out trips the user is ineligible for based on their gender
-        if (userGender) {
-          const uGen = userGender.toLowerCase()
-          filteredTrips = filteredTrips.filter(t => {
-            const pref = t.gender_preference?.toLowerCase() || 'any'
-            if (pref === 'any') return true
-            if (pref === 'male_only' && uGen === 'male') return true
-            if (pref === 'female_only' && uGen === 'female') return true
-            return false
-          })
+        if (r.status === 'accepted') {
+          memberCounts[r.trip_id] = (memberCounts[r.trip_id] || 0) + 1
         }
-        
-        setTrips(filteredTrips)
+      })
+
+      setRequestStatusMap(userRequestStatuses)
+      
+      const enhancedTrips = allTrips.map(t => ({
+        ...t,
+        current_members: (memberCounts[t.id] || 0) + 1
+      }))
+
+      let filteredTrips = enhancedTrips
+
+      // Apply explicit gender toggle filter
+      if (genderFilter !== 'any') {
+        filteredTrips = filteredTrips.filter(t => t.gender_preference === genderFilter)
       }
       
+      // Filter out trips the user is ineligible for based on their gender
+      if (userGender) {
+        const uGen = userGender.toLowerCase()
+        filteredTrips = filteredTrips.filter(t => {
+          const pref = t.gender_preference?.toLowerCase() || 'any'
+          if (pref === 'any') return true
+          if (pref === 'male_only' && uGen === 'male') return true
+          if (pref === 'female_only' && uGen === 'female') return true
+          return false
+        })
+      }
+      
+      setTrips(filteredTrips)
       setLoading(false)
     }
 

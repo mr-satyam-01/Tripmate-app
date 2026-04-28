@@ -252,11 +252,11 @@ export default function EditTripPage() {
                 )}
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Who can join this trip?</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender Preference</label>
                   <select value={genderPreference} onChange={e => setGenderPreference(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 outline-none bg-white">
-                    <option value="any">Anyone</option>
-                    <option value="men_only">Men Only</option>
-                    <option value="women_only">Women Only</option>
+                    <option value="any">Open to All</option>
+                    <option value="male_only">Male Only</option>
+                    <option value="female_only">Female Only</option>
                   </select>
                 </div>
               </div>
@@ -275,14 +275,6 @@ export default function EditTripPage() {
               <div className="space-y-6 bg-gray-50 p-6 rounded-2xl border border-gray-100">
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Gender</label>
-                    <select value={genderPreference} onChange={e => setGenderPreference(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 outline-none bg-white">
-                      <option value="any">Any Gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Travel Style</label>
                     <select value={travelStyle} onChange={e => setTravelStyle(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 outline-none bg-white">

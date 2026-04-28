@@ -154,6 +154,18 @@ function ExploreContent() {
       filtered = filtered.filter(t => t.gender_preference === genderFilter)
     }
 
+    // Only show trips where the user is eligible to join based on their gender
+    if (currentUser?.gender) {
+      const uGen = currentUser.gender.toLowerCase()
+      filtered = filtered.filter(t => {
+        const pref = t.gender_preference?.toLowerCase() || 'any'
+        if (pref === 'any') return true
+        if (pref === 'male_only' && uGen === 'male') return true
+        if (pref === 'female_only' && uGen === 'female') return true
+        return false
+      })
+    }
+
     const scoredTrips = filtered.map(trip => {
       let score = 50
 
@@ -235,16 +247,16 @@ function ExploreContent() {
             All Trips
           </button>
           <button 
-            onClick={() => setGenderFilter('women_only')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'women_only' ? 'bg-pink-50 text-pink-700' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setGenderFilter('female_only')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'female_only' ? 'bg-pink-50 text-pink-700' : 'text-gray-500 hover:text-gray-700'}`}
           >
-            Women Only
+            Female Only
           </button>
           <button 
-            onClick={() => setGenderFilter('men_only')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'men_only' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setGenderFilter('male_only')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'male_only' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
           >
-            Men Only
+            Male Only
           </button>
         </div>
       </div>

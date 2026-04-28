@@ -144,14 +144,7 @@ export default function CreateTripPage() {
                   </div>
                 )}
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Who can join this trip?</label>
-                  <select value={genderPreference} onChange={e => setGenderPreference(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 outline-none bg-white">
-                    <option value="any">Anyone</option>
-                    <option value="men_only">Men Only</option>
-                    <option value="women_only">Women Only</option>
-                  </select>
-                </div>
+
               </div>
 
               <div>
@@ -171,8 +164,8 @@ export default function CreateTripPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Gender</label>
                   <select value={genderPreference} onChange={e => setGenderPreference(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 outline-none bg-white">
                     <option value="any">Any Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
+                    <option value="male_only">Male Only</option>
+                    <option value="female_only">Female Only</option>
                   </select>
                 </div>
                 <div>

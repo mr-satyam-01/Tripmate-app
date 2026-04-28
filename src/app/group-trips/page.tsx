@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { GroupTripCard } from '@/components/cards/GroupTripCard'
-import { createGroupTrip, requestToJoinTrip } from '@/app/actions/trips'
+import { requestToJoinTrip } from '@/app/actions/trips'
 
 export default function GroupTripsPage() {
   const [trips, setTrips] = useState<any[]>([])
@@ -11,7 +11,6 @@ export default function GroupTripsPage() {
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [currentUserGender, setCurrentUserGender] = useState<string | null>(null)
-  const [showModal, setShowModal] = useState(false)
   const [genderFilter, setGenderFilter] = useState<string>('any')
   const supabase = createClient()
 
@@ -67,6 +66,17 @@ export default function GroupTripsPage() {
           filteredTrips = filteredTrips.filter(t => t.gender_preference === genderFilter)
         }
         
+        if (currentUserGender) {
+          const uGen = currentUserGender.toLowerCase()
+          filteredTrips = filteredTrips.filter(t => {
+            const pref = t.gender_preference?.toLowerCase() || 'any'
+            if (pref === 'any') return true
+            if (pref === 'male_only' && uGen === 'male') return true
+            if (pref === 'female_only' && uGen === 'female') return true
+            return false
+          })
+        }
+        
         setTrips(filteredTrips)
       }
       
@@ -82,19 +92,6 @@ export default function GroupTripsPage() {
       setRequestStatusMap(prev => ({ ...prev, [id]: 'pending' }))
     } else {
       alert('Failed to send request: ' + res.error)
-    }
-  }
-
-  const handleCreateTrip = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const res = await createGroupTrip(formData)
-    
-    if (res.success) {
-      setShowModal(false)
-      window.location.reload() // Simple refresh to show new trip
-    } else {
-      alert('Failed to create trip: ' + res.error)
     }
   }
 
@@ -119,25 +116,18 @@ export default function GroupTripsPage() {
               All Trips
             </button>
             <button 
-              onClick={() => setGenderFilter('women_only')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'women_only' ? 'bg-pink-50 text-pink-700' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setGenderFilter('female_only')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'female_only' ? 'bg-pink-50 text-pink-700' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              Women Only
+              Female Only
             </button>
             <button 
-              onClick={() => setGenderFilter('men_only')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'men_only' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setGenderFilter('male_only')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'male_only' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              Men Only
+              Male Only
             </button>
           </div>
-
-          <button 
-            onClick={() => setShowModal(true)}
-            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-xl transition-colors shadow-sm"
-          >
-            Create Trip
-          </button>
         </div>
       </div>
 
@@ -160,67 +150,6 @@ export default function GroupTripsPage() {
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="text-lg font-bold text-gray-900">Create a Group Trip</h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleCreateTrip} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-                <input required name="destination" type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500" placeholder="e.g. Bali, Indonesia" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input required name="start_date" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input required name="end_date" type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
-                  <input name="budget" type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500" placeholder="e.g. $1000 - $1500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of People</label>
-                  <select name="max_members" defaultValue="10" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 bg-white">
-                    {[...Array(19)].map((_, i) => (
-                      <option key={i + 2} value={i + 2}>{i + 2} People</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Who can join?</label>
-                  <select name="gender_preference" defaultValue="any" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 bg-white">
-                    <option value="any">Anyone</option>
-                    <option value="men_only">Men Only</option>
-                    <option value="women_only">Women Only</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea required name="description" rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 resize-none" placeholder="Tell us about the trip..."></textarea>
-              </div>
-              <div className="pt-2">
-                <button type="submit" className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors">
-                  Publish Trip
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

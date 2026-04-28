@@ -18,14 +18,14 @@ export function DuoTripCard({ trip, compatibilityScore, onRequestToJoin, request
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative">
       <div className="absolute top-4 right-4 flex gap-2">
-        {trip.gender_preference === 'women_only' && (
+        {trip.gender_preference === 'female_only' && (
           <div className="bg-pink-100 text-pink-700 text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-sm">
-            Women Only
+            Female Only
           </div>
         )}
-        {trip.gender_preference === 'men_only' && (
+        {trip.gender_preference === 'male_only' && (
           <div className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-sm">
-            Men Only
+            Male Only
           </div>
         )}
         <div className="bg-primary-100 text-primary-700 text-xs font-bold px-3 py-1 rounded-full flex items-center">
@@ -106,8 +106,8 @@ export function DuoTripCard({ trip, compatibilityScore, onRequestToJoin, request
         let disabledReason = null
         if (requestStatus === 'pending') disabledReason = 'Pending'
         else if (requestStatus === 'accepted') disabledReason = 'Accepted'
-        else if (trip.gender_preference === 'women_only' && currentUserGender?.toLowerCase() !== 'female') disabledReason = 'Women Only'
-        else if (trip.gender_preference === 'men_only' && currentUserGender?.toLowerCase() !== 'male') disabledReason = 'Men Only'
+        else if (trip.gender_preference === 'female_only' && currentUserGender?.toLowerCase() !== 'female') disabledReason = 'Female Only'
+        else if (trip.gender_preference === 'male_only' && currentUserGender?.toLowerCase() !== 'male') disabledReason = 'Male Only'
 
         return (
           <button

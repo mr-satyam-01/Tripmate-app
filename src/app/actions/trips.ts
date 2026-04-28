@@ -41,6 +41,32 @@ export async function requestToJoinTrip(tripId: string) {
     return { error: 'Not authenticated' }
   }
 
+  // Fetch the trip and the user's gender
+  const { data: trip } = await supabase
+    .from('group_trips')
+    .select('gender_preference')
+    .eq('id', tripId)
+    .single()
+
+  if (!trip) {
+    return { error: 'Trip not found' }
+  }
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('gender')
+    .eq('id', user.id)
+    .single()
+
+  const userGender = userData?.gender?.toLowerCase()
+  const pref = trip.gender_preference?.toLowerCase() || 'any'
+
+  if (pref === 'male_only' && userGender !== 'male') {
+    return { error: 'This trip is restricted to male travelers only.' }
+  } else if (pref === 'female_only' && userGender !== 'female') {
+    return { error: 'This trip is restricted to female travelers only.' }
+  }
+
   // Check if a request already exists
   const { data: existingRequest } = await supabase
     .from('trip_requests')

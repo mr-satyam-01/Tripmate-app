@@ -40,9 +40,9 @@ export function GroupTripCard({ trip, onJoin, requestStatus, currentUserId, curr
             )}
             {trip.gender_preference && trip.gender_preference !== 'any' && (
               <div className={`text-xs font-bold px-2 py-1 mt-2 inline-block rounded-md ${
-                trip.gender_preference === 'women_only' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'
+                trip.gender_preference === 'female_only' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'
               }`}>
-                {trip.gender_preference === 'women_only' ? 'Women Only' : 'Men Only'}
+                {trip.gender_preference === 'female_only' ? 'Female Only' : 'Male Only'}
               </div>
             )}
           </div>
@@ -84,8 +84,8 @@ export function GroupTripCard({ trip, onJoin, requestStatus, currentUserId, curr
           if (requestStatus === 'pending') disabledReason = 'Requested'
           else if (requestStatus === 'accepted') disabledReason = 'Joined'
           else if (trip.max_members && (trip.current_members || 1) >= trip.max_members) disabledReason = 'Trip Full'
-          else if (trip.gender_preference === 'women_only' && currentUserGender?.toLowerCase() !== 'female') disabledReason = 'Women Only'
-          else if (trip.gender_preference === 'men_only' && currentUserGender?.toLowerCase() !== 'male') disabledReason = 'Men Only'
+          else if (trip.gender_preference === 'female_only' && currentUserGender?.toLowerCase() !== 'female') disabledReason = 'Female Only'
+          else if (trip.gender_preference === 'male_only' && currentUserGender?.toLowerCase() !== 'male') disabledReason = 'Male Only'
 
           return (
             <button 

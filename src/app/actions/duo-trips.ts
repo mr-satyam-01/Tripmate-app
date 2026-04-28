@@ -11,6 +11,32 @@ export async function requestToJoinDuoTrip(tripId: string) {
       return { success: false, error: 'Unauthorized' }
     }
 
+    // Fetch the trip and the user's gender
+    const { data: trip } = await supabase
+      .from('trips')
+      .select('gender_preference')
+      .eq('id', tripId)
+      .single()
+
+    if (!trip) {
+      return { success: false, error: 'Trip not found' }
+    }
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('gender')
+      .eq('id', user.id)
+      .single()
+
+    const userGender = userData?.gender?.toLowerCase()
+    const pref = trip.gender_preference?.toLowerCase() || 'any'
+
+    if (pref === 'male_only' && userGender !== 'male') {
+      return { success: false, error: 'This trip is restricted to male travelers only.' }
+    } else if (pref === 'female_only' && userGender !== 'female') {
+      return { success: false, error: 'This trip is restricted to female travelers only.' }
+    }
+
     // Check if a request already exists
     const { data: existingRequest } = await supabase
       .from('duo_trip_requests')

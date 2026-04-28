@@ -3,21 +3,26 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { acceptJoinRequest, rejectJoinRequest, removeParticipant } from '@/app/actions/duo-trips'
-import { User, Check, X, MessageSquare, ArrowLeft, UserMinus } from 'lucide-react'
+import { deleteTrip } from '@/app/actions/manage-trips'
+import { User, Check, X, MessageSquare, ArrowLeft, UserMinus, Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 
 export default function TripRequestsPage() {
   const { tripId } = useParams()
+  const router = useRouter()
   const [trip, setTrip] = useState<any>(null)
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      setCurrentUserId(user.id)
 
       let isGroup = false
       let fetchedTrip = null
@@ -114,6 +119,19 @@ export default function TripRequestsPage() {
     }
   }
 
+  const handleDeleteTrip = async () => {
+    if (!confirm('Are you sure you want to delete this trip? This action cannot be undone.')) return
+    setIsDeleting(true)
+    const isGroup = trip?.trip_type === 'group'
+    const res = await deleteTrip(tripId as string, isGroup)
+    if (res.success) {
+      router.push('/my-trips')
+    } else {
+      alert('Failed to delete trip: ' + res.error)
+      setIsDeleting(false)
+    }
+  }
+
   if (loading) {
     return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>
   }
@@ -125,12 +143,32 @@ export default function TripRequestsPage() {
   const isGroup = trip.trip_type === 'group'
   const acceptedCount = requests.filter(req => req.status === 'accepted').length
   const isFull = isGroup ? acceptedCount >= ((trip.max_members || 2) - 1) : acceptedCount > 0
+  const isOwner = trip.user_id === currentUserId || trip.creator_id === currentUserId
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Link href="/my-trips" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 mb-6 transition-colors">
-        <ArrowLeft className="w-4 h-4 mr-1" /> Back to My Trips
-      </Link>
+      <div className="flex items-center justify-between mb-6">
+        <Link href="/my-trips" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to My Trips
+        </Link>
+        {isOwner && (
+          <div className="flex gap-3">
+            <Link 
+              href={`/my-trips/${tripId}/edit`}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-sm"
+            >
+              <Pencil className="w-4 h-4 mr-2" /> Edit Trip
+            </Link>
+            <button
+              onClick={handleDeleteTrip}
+              disabled={isDeleting}
+              className="inline-flex items-center px-4 py-2 border border-red-200 text-sm font-medium rounded-xl text-red-600 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm disabled:opacity-50"
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> {isDeleting ? 'Deleting...' : 'Delete Trip'}
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">{trip.destination}</h1>

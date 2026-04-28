@@ -5,7 +5,8 @@ import { revalidatePath } from 'next/cache'
 
 export async function updateTrip(tripId: string, isGroupTable: boolean, data: any) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
 
   if (!user) {
     return { error: 'Not authenticated' }
@@ -37,15 +38,16 @@ export async function updateTrip(tripId: string, isGroupTable: boolean, data: an
   }
 
   // Update trip with strict ownership check
-  const { error } = await supabase
+  const { data: updateData, error } = await supabase
     .from(table)
     .update(data)
     .eq('id', tripId)
     .eq(ownerCol, user.id)
+    .select()
 
-  if (error) {
+  if (error || !updateData || updateData.length === 0) {
     console.error('Error updating trip:', error)
-    return { error: error.message }
+    return { error: error?.message || 'Update failed - no matching trip or unauthorized' }
   }
 
   revalidatePath(`/my-trips/${tripId}`)
@@ -58,7 +60,8 @@ export async function updateTrip(tripId: string, isGroupTable: boolean, data: an
 
 export async function deleteTrip(tripId: string, isGroupTable: boolean) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
 
   if (!user) {
     return { error: 'Not authenticated' }
@@ -101,15 +104,16 @@ export async function deleteTrip(tripId: string, isGroupTable: boolean) {
   await supabase.from('messages').delete().eq('trip_id', tripId)
 
   // Finally, delete the trip itself with strict ownership check
-  const { error } = await supabase
+  const { data: deleteData, error } = await supabase
     .from(table)
     .delete()
     .eq('id', tripId)
     .eq(ownerCol, user.id)
+    .select()
 
-  if (error) {
+  if (error || !deleteData || deleteData.length === 0) {
     console.error('Error deleting trip:', error)
-    return { error: error.message }
+    return { error: error?.message || 'Delete failed - no matching trip or unauthorized' }
   }
 
   revalidatePath('/my-trips')

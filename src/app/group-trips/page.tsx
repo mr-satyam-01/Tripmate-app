@@ -22,7 +22,8 @@ export default function GroupTripsPage() {
       setCurrentUserId(user.id)
       
       const { data: userData } = await supabase.from('users').select('gender').eq('id', user.id).single()
-      if (userData) setCurrentUserGender(userData.gender)
+      const userGender = userData?.gender || null
+      setCurrentUserGender(userGender)
 
       const { data: tripsData } = await supabase
         .from('group_trips')
@@ -45,11 +46,9 @@ export default function GroupTripsPage() {
         const userRequestStatuses: Record<string, string> = {}
 
         requestsData?.forEach(r => {
-          // Track user's requests
           if (r.user_id === user.id) {
             userRequestStatuses[r.trip_id] = r.status
           }
-          // Track total accepted members per trip
           if (r.status === 'accepted') {
             memberCounts[r.trip_id] = (memberCounts[r.trip_id] || 0) + 1
           }
@@ -59,15 +58,19 @@ export default function GroupTripsPage() {
         
         const enhancedTrips = tripsData.map(t => ({
           ...t,
-          current_members: (memberCounts[t.id] || 0) + 1 // +1 for the creator
+          current_members: (memberCounts[t.id] || 0) + 1
         }))
+
         let filteredTrips = enhancedTrips
+
+        // Apply explicit gender toggle filter
         if (genderFilter !== 'any') {
           filteredTrips = filteredTrips.filter(t => t.gender_preference === genderFilter)
         }
         
-        if (currentUserGender) {
-          const uGen = currentUserGender.toLowerCase()
+        // Filter out trips the user is ineligible for based on their gender
+        if (userGender) {
+          const uGen = userGender.toLowerCase()
           filteredTrips = filteredTrips.filter(t => {
             const pref = t.gender_preference?.toLowerCase() || 'any'
             if (pref === 'any') return true

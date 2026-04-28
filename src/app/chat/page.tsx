@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { User, Send } from 'lucide-react'
+import { User, Send, ChevronLeft } from 'lucide-react'
 
 export default function ChatPage() {
   const [connections, setConnections] = useState<any[]>([])
@@ -173,9 +173,9 @@ export default function ChatPage() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-[calc(100vh-8rem)] flex">
-      {/* Sidebar */}
-      <div className="w-1/3 border-r border-gray-100 flex flex-col">
-        <div className="p-4 border-b border-gray-100 bg-gray-50">
+      {/* Sidebar - Hidden on mobile if a chat is active */}
+      <div className={`w-full md:w-1/3 border-r border-gray-100 flex flex-col ${activeChat ? 'hidden md:flex' : 'flex'}`}>
+        <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
           <h2 className="text-lg font-bold text-gray-900">Connections</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -220,11 +220,17 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-50">
+      {/* Chat Area - Hidden on mobile if NO chat is active */}
+      <div className={`flex-1 flex flex-col bg-gray-50 ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
         {activeChat ? (
           <>
             <div className="p-4 border-b border-gray-100 bg-white flex items-center gap-3">
+               <button 
+                 onClick={() => setActiveChat(null)}
+                 className="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-900"
+               >
+                 <ChevronLeft size={24} />
+               </button>
                <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 overflow-hidden">
                   {activeChat.user.profile_image_url ? (
                     <img src={activeChat.user.profile_image_url} alt={activeChat.user.name} className="w-full h-full object-cover" />
@@ -242,7 +248,7 @@ export default function ChatPage() {
                 const isMine = m.sender_id === currentUser.id
                 return (
                   <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[70%] px-4 py-2 rounded-2xl ${
+                    <div className={`max-w-[85%] md:max-w-[70%] px-4 py-2 rounded-2xl ${
                       isMine ? 'bg-primary-600 text-white rounded-br-sm' : 'bg-white text-gray-800 border border-gray-100 shadow-sm rounded-bl-sm'
                     }`}>
                       {m.content}
@@ -264,7 +270,7 @@ export default function ChatPage() {
                 <button
                   type="submit"
                   disabled={!newMessage.trim()}
-                  className="bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-xl transition-colors disabled:opacity-50"
+                  className="bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-xl transition-colors disabled:opacity-50 flex-shrink-0"
                 >
                   <Send size={20} />
                 </button>

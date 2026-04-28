@@ -68,7 +68,7 @@ export default function LocalFriendsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Local Friends</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Local Friends</h1>
         <p className="text-gray-500 mt-2">Connect with travelers and locals in your area.</p>
       </div>
 

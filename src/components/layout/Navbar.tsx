@@ -119,10 +119,10 @@ export function Navbar() {
               </Link>
             </div>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+          <div className="flex sm:ml-6 items-center space-x-2 sm:space-x-4">
             <Link
               href="/my-trips"
-              className="text-sm font-medium text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors"
+              className="hidden sm:block text-sm font-medium text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors"
             >
               My Trips
             </Link>

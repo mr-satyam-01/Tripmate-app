@@ -235,11 +235,11 @@ function ExploreContent() {
     <div>
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Explore Duo Trips</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Explore Duo Trips</h1>
           <p className="text-gray-500 mt-2">Find a travel partner for your next adventure.</p>
         </div>
         
-        <div className="flex bg-white rounded-lg p-1 shadow-sm border border-gray-100">
+        <div className="flex flex-wrap sm:flex-nowrap bg-white rounded-lg p-1 shadow-sm border border-gray-100 overflow-x-auto">
           <button 
             onClick={() => setGenderFilter('any')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${genderFilter === 'any' ? 'bg-primary-50 text-primary-700' : 'text-gray-500 hover:text-gray-700'}`}
@@ -296,7 +296,7 @@ function ExploreContent() {
 
       <Link
         href="/create-trip"
-        className="fixed bottom-8 right-8 bg-primary-600 text-white p-4 rounded-full shadow-lg hover:bg-primary-700 transition-colors z-40 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+        className="fixed bottom-24 sm:bottom-8 right-6 sm:right-8 bg-primary-600 text-white p-4 rounded-full shadow-lg hover:bg-primary-700 transition-colors z-40 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
         aria-label="Create Duo Trip"
         title="Create Duo Trip"
       >

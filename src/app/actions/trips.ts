@@ -41,15 +41,40 @@ export async function requestToJoinTrip(tripId: string) {
     return { error: 'Not authenticated' }
   }
 
-  // Fetch the trip and the user's gender
-  const { data: trip } = await supabase
+  // Fetch the trip — check both tables since group trips may be in either
+  let tripPref: string | null = null
+
+  const { data: legacyTrip } = await supabase
     .from('group_trips')
     .select('gender_preference')
     .eq('id', tripId)
     .single()
 
-  if (!trip) {
-    return { error: 'Trip not found' }
+  if (legacyTrip) {
+    tripPref = legacyTrip.gender_preference
+  } else {
+    const { data: unifiedTrip } = await supabase
+      .from('trips')
+      .select('gender_preference')
+      .eq('id', tripId)
+      .single()
+
+    if (unifiedTrip) {
+      tripPref = unifiedTrip.gender_preference
+    }
+  }
+
+  if (tripPref === null && !legacyTrip) {
+    // Neither table had this trip
+    const { data: checkUnified } = await supabase
+      .from('trips')
+      .select('id')
+      .eq('id', tripId)
+      .single()
+    if (!checkUnified) {
+      return { error: 'Trip not found' }
+    }
+    tripPref = 'any'
   }
 
   const { data: userData } = await supabase
@@ -59,7 +84,7 @@ export async function requestToJoinTrip(tripId: string) {
     .single()
 
   const userGender = userData?.gender?.toLowerCase()
-  const pref = trip.gender_preference?.toLowerCase() || 'any'
+  const pref = tripPref?.toLowerCase() || 'any'
 
   if (pref === 'male_only' && userGender !== 'male') {
     return { error: 'This trip is restricted to male travelers only.' }

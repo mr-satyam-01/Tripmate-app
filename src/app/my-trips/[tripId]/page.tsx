@@ -59,7 +59,9 @@ export default function TripRequestsPage() {
         setTrip(fetchedTrip)
 
         // Load Requests with User Data
-        const requestsTable = isGroup ? 'trip_requests' : 'duo_trip_requests'
+        // trips table → duo_trip_requests (FK), group_trips table → trip_requests (FK)
+        const isLegacyGroupTrip = !tripData && isGroup
+        const requestsTable = isLegacyGroupTrip ? 'trip_requests' : 'duo_trip_requests'
         const { data: requestData } = await supabase
           .from(requestsTable)
           .select('*, users(*)')

@@ -87,7 +87,14 @@ export async function acceptJoinRequest(requestId: string, tripId: string, reque
       return { success: false, error: 'Unauthorized' }
     }
 
-    const requestsTable = isGroup ? 'trip_requests' : 'duo_trip_requests'
+    // Determine correct requests table
+    const { data: unifiedTrip } = await supabase
+      .from('trips')
+      .select('id')
+      .eq('id', tripId)
+      .single()
+
+    const requestsTable = unifiedTrip ? 'duo_trip_requests' : 'trip_requests'
 
     // 1. Accept the specific request
     const { error: acceptError } = await supabase
@@ -152,7 +159,18 @@ export async function rejectJoinRequest(requestId: string, isGroup: boolean = fa
       return { success: false, error: 'Unauthorized' }
     }
 
-    const requestsTable = isGroup ? 'trip_requests' : 'duo_trip_requests'
+    // Determine correct requests table
+    // For reject, we don't have tripId easily in args if we just have requestId?
+    // Oh wait, rejectJoinRequest doesn't take tripId.
+    // Let's find the request in either table.
+    let requestsTable = 'duo_trip_requests'
+    const { data: checkDuo } = await supabase.from('duo_trip_requests').select('id').eq('id', requestId).single()
+    if (!checkDuo) {
+      const { data: checkLegacy } = await supabase.from('trip_requests').select('id').eq('id', requestId).single()
+      if (checkLegacy) {
+        requestsTable = 'trip_requests'
+      }
+    }
 
     const { error } = await supabase
       .from(requestsTable)
@@ -176,7 +194,14 @@ export async function removeParticipant(requestId: string, tripId: string, reque
       return { success: false, error: 'Unauthorized' }
     }
 
-    const requestsTable = isGroup ? 'trip_requests' : 'duo_trip_requests'
+    // Determine correct requests table
+    const { data: unifiedTrip } = await supabase
+      .from('trips')
+      .select('id')
+      .eq('id', tripId)
+      .single()
+
+    const requestsTable = unifiedTrip ? 'duo_trip_requests' : 'trip_requests'
 
     // Verify ownership (optional but recommended: only the trip creator should be able to remove)
     // We trust the frontend to only show the button to the creator, but could double check DB here.

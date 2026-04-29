@@ -25,14 +25,7 @@ export default function GroupTripsPage() {
       const userGender = userData?.gender || null
       setCurrentUserGender(userGender)
 
-      // Fetch from group_trips table (legacy)
-      const { data: legacyTrips } = await supabase
-        .from('group_trips')
-        .select(`*, users ( name, profile_image_url )`)
-        .neq('creator_id', user.id)
-        .order('created_at', { ascending: false })
-
-      // Fetch from trips table (new — created via Create Trip page)
+      // Fetch exclusively from the unified trips table
       const { data: unifiedTrips } = await supabase
         .from('trips')
         .select(`*, users ( name, profile_image_url )`)
@@ -40,38 +33,13 @@ export default function GroupTripsPage() {
         .neq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      // Merge both sources, normalizing creator field
-      const legacyNormalized = (legacyTrips || []).map(t => ({
-        ...t,
-        _source: 'group_trips' as const,
-        _ownerId: t.creator_id
-      }))
-      const unifiedNormalized = (unifiedTrips || []).map(t => ({
-        ...t,
-        _source: 'trips' as const,
-        _ownerId: t.user_id,
-        creator_id: t.user_id // normalize for GroupTripCard
-      }))
+      const allTrips = unifiedTrips || []
 
-      // Deduplicate by id (in case a trip exists in both)
-      const seenIds = new Set<string>()
-      const allTrips: any[] = []
-      for (const t of [...unifiedNormalized, ...legacyNormalized]) {
-        if (!seenIds.has(t.id)) {
-          seenIds.add(t.id)
-          allTrips.push(t)
-        }
-      }
-
-      // Fetch requests from both tables
-      const { data: groupRequests } = await supabase
-        .from('trip_requests')
-        .select('trip_id, status, user_id')
       const { data: duoRequests } = await supabase
         .from('duo_trip_requests')
         .select('trip_id, status, user_id')
 
-      const allRequests = [...(groupRequests || []), ...(duoRequests || [])]
+      const allRequests = duoRequests || []
 
       const memberCounts: Record<string, number> = {}
       const userRequestStatuses: Record<string, string> = {}

@@ -9,7 +9,7 @@ interface GroupTripCardProps {
     end_date: string
     budget: string | null
     description: string | null
-    creator_id: string
+    user_id: string
     gender_preference?: string | null
     users?: { name: string, profile_image_url: string } // Joined creator data
     current_members?: number
@@ -67,7 +67,7 @@ export function GroupTripCard({ trip, onJoin, requestStatus, currentUserId, curr
       </div>
       
       <div className="px-6 pb-6 mt-auto">
-        {currentUserId === trip.creator_id ? (
+        {currentUserId === trip.user_id ? (
           <div className="w-full font-medium py-2 px-4 rounded-xl text-sm bg-gray-100 text-gray-500 text-center">
             Your Trip
           </div>

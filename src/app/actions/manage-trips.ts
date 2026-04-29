@@ -81,7 +81,7 @@ export async function deleteTrip(tripId: string, isGroupTable: boolean) {
 
   if (existingTrip) {
     isGroup = existingTrip.trip_type === 'group'
-    requestsTable = isGroup ? 'trip_requests' : 'duo_trip_requests'
+    requestsTable = 'duo_trip_requests' // All unified trips use duo_trip_requests
   } else {
     const { data: groupTrip } = await supabase
       .from('group_trips')

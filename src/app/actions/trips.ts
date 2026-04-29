@@ -34,99 +34,86 @@ export async function createGroupTrip(formData: FormData) {
 }
 
 export async function requestToJoinTrip(tripId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: 'Not authenticated' }
-  }
+    if (userError || !user) {
+      return { success: false, error: 'Unauthorized' }
+    }
 
-  // Fetch the trip — check both tables since group trips may be in either
-  let tripPref: string | null = null
+    console.log('--- JOIN REQUEST DEBUG ---')
+    console.log('Received tripId in action:', tripId)
 
-  const { data: legacyTrip } = await supabase
-    .from('group_trips')
-    .select('gender_preference')
-    .eq('id', tripId)
-    .single()
-
-  if (legacyTrip) {
-    tripPref = legacyTrip.gender_preference
-  } else {
-    const { data: unifiedTrip } = await supabase
+    // Fetch the trip from unified trips table
+    const { data: trip } = await supabase
       .from('trips')
-      .select('gender_preference')
+      .select('gender_preference, trip_type, id')
       .eq('id', tripId)
       .single()
 
-    if (unifiedTrip) {
-      tripPref = unifiedTrip.gender_preference
-    }
-  }
+    console.log('Database check in trips table for ID:', tripId, 'Found:', trip?.id)
 
-  if (tripPref === null && !legacyTrip) {
-    // Neither table had this trip
-    const { data: checkUnified } = await supabase
-      .from('trips')
-      .select('id')
-      .eq('id', tripId)
+    if (!trip) {
+      console.error('Trip not found in trips table for ID:', tripId)
+      return { success: false, error: 'Trip not found' }
+    }
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('gender')
+      .eq('id', user.id)
       .single()
-    if (!checkUnified) {
-      return { error: 'Trip not found' }
+
+    const userGender = userData?.gender?.toLowerCase()
+    const pref = trip.gender_preference?.toLowerCase() || 'any'
+
+    if (pref === 'male_only' && userGender !== 'male') {
+      return { success: false, error: 'This trip is restricted to male travelers only.' }
+    } else if (pref === 'female_only' && userGender !== 'female') {
+      return { success: false, error: 'This trip is restricted to female travelers only.' }
     }
-    tripPref = 'any'
-  }
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('gender')
-    .eq('id', user.id)
-    .single()
+    // Reuse duo_trip_requests for unified group trips
+    const { data: existingRequest } = await supabase
+      .from('duo_trip_requests')
+      .select('id, status')
+      .eq('trip_id', tripId)
+      .eq('user_id', user.id)
+      .single()
 
-  const userGender = userData?.gender?.toLowerCase()
-  const pref = tripPref?.toLowerCase() || 'any'
-
-  if (pref === 'male_only' && userGender !== 'male') {
-    return { error: 'This trip is restricted to male travelers only.' }
-  } else if (pref === 'female_only' && userGender !== 'female') {
-    return { error: 'This trip is restricted to female travelers only.' }
-  }
-
-  // Check if a request already exists
-  const { data: existingRequest } = await supabase
-    .from('trip_requests')
-    .select('id, status')
-    .eq('trip_id', tripId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (existingRequest) {
-    if (existingRequest.status === 'pending' || existingRequest.status === 'accepted') {
-      return { error: 'Request already sent' }
-    } else {
-      // If rejected, update to pending (re-request)
-      const { error } = await supabase
-        .from('trip_requests')
-        .update({ status: 'pending' })
-        .eq('id', existingRequest.id)
-      
-      if (error) return { error: error.message }
-      revalidatePath('/group-trips')
-      return { success: true }
+    if (existingRequest) {
+      if (existingRequest.status === 'pending' || existingRequest.status === 'accepted') {
+        return { success: false, error: 'Request already sent' }
+      } else {
+        // If rejected, update to pending
+        const { error } = await supabase
+          .from('duo_trip_requests')
+          .update({ status: 'pending' })
+          .eq('id', existingRequest.id)
+        
+        if (error) return { success: false, error: error.message }
+        revalidatePath('/group-trips')
+        return { success: true }
+      }
     }
+
+    const { error } = await supabase
+      .from('duo_trip_requests')
+      .insert({
+        trip_id: tripId,
+        user_id: user.id,
+        status: 'pending'
+      })
+
+    if (error) {
+      console.error('Error joining trip:', error)
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath('/group-trips')
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message || 'An error occurred' }
   }
-
-  const { error } = await supabase.from('trip_requests').insert({
-    trip_id: tripId,
-    user_id: user.id,
-    status: 'pending'
-  })
-
-  if (error) {
-    console.error('Error joining trip:', error)
-    return { error: error.message }
-  }
-
-  revalidatePath('/group-trips')
-  return { success: true }
 }
